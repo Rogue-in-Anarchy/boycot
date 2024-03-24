@@ -3,11 +3,13 @@ const puppeteer = require("puppeteer");
 try {
   (async () => {
     try {
+      //setting up puppeteer
       const browser = await puppeteer.launch();
       const page = await browser.newPage();
 
       const navigationPromise = page.waitForNavigation();
 
+      // opening the boycot-zionism website ans setting up the page
       await page.goto("https://www.boycotzionism.com/", {
         waitUntil: "networkidle0",
       });
@@ -16,17 +18,15 @@ try {
 
       await navigationPromise;
 
-      console.log("connected to boycot");
-
       let previousItemCount = 0;
       let currentItemCount = 0;
-      let buttons = [];
 
       let contents = await page.$$(
         ".container > .infinite-scroll-component__outerdiv > .infinite-scroll-component > .grid > .react-card-flip > .react-card-flipper > .react-card-front > .border-slate-200 > .gap-1 > .bg-red-700"
       );
 
       previousItemCount = contents.length;
+      // Iterating and counting the total items on the page
 
       while (previousItemCount !== currentItemCount) {
         previousItemCount = currentItemCount;
@@ -38,10 +38,8 @@ try {
 
         // Wait for a brief moment for potential new items to load
         try {
-          buttons.push(
-            await page.waitForFunction(
-              `document.querySelectorAll('.container > .infinite-scroll-component__outerdiv > .infinite-scroll-component > .grid > .react-card-flip > .react-card-flipper > .react-card-front > .border-slate-200 > .gap-1 > .bg-red-700').length > ${currentItemCount}`
-            )
+          await page.waitForFunction(
+            `document.querySelectorAll('.container > .infinite-scroll-component__outerdiv > .infinite-scroll-component > .grid > .react-card-flip > .react-card-flipper > .react-card-front > .border-slate-200 > .gap-1 > .bg-red-700').length > ${currentItemCount}`
           );
         } catch {
           console.log("Timeout waiting for new items. Exiting loop.");
@@ -58,16 +56,6 @@ try {
 
         // Update the count of total items collected so far
         currentItemCount = newItems.length;
-
-        // Optionally, process or store the new items as needed
-        // For example:
-        for (const itemHandle of newItems) {
-          const itemText = await page.evaluate(
-            (item) => item.textContent,
-            itemHandle
-          );
-        }
-        console.log(currentItemCount, newItems.length, previousItemCount);
       }
 
       const next = [];
@@ -75,6 +63,7 @@ try {
       for (const content of contents) {
         let start = 0;
         let end = 1050;
+
         // Scroll the page to bring the element into view
         await page.evaluate((start, end) => {
           window.scrollTo(start, end);
@@ -82,24 +71,25 @@ try {
 
         await navigationPromise;
 
+        // clicking to show details of a specific item
         await content.click();
 
         await navigationPromise;
 
-        page.screenshot({ path: "bocat.jpg" });
-        const _name = await page.evaluate(() => {
+        // saving the details of each item
+        const name = await page.evaluate(() => {
           return document.querySelector(
             "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .border-solid > h3"
           ).innerText;
         });
 
-        const _details = await page.evaluate(() => {
+        const details = await page.evaluate(() => {
           return document.querySelector(
-            "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .flex-auto > .markdown"
-          ).innerHTML;
+            "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .flex-auto > .markdown > p"
+          ).innerText;
         });
 
-        const _logo = await page.evaluate(() => {
+        const logo = await page.evaluate(() => {
           return document
             .querySelector(
               "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .flex-auto > .justify-center > img"
@@ -107,7 +97,7 @@ try {
             .getAttribute("src");
         });
 
-        const _source = await page.evaluate(() => {
+        const source = await page.evaluate(() => {
           return document
             .querySelector(
               "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .justify-end > a"
@@ -115,15 +105,17 @@ try {
             .getAttribute("href");
         });
 
+        // clicking to close the details modal an opened item
         await page.click(
           "[data-focus-lock-disabled='false'] > .z-50 > .mx-auto > .justify-end > button"
         );
 
+        // creating an object of all the necessary iformations on the item and pushing them into the next array
         next.push({
-          name: _name,
-          details: _details,
-          logo: _logo,
-          source: _source,
+          _name: name,
+          _details: details,
+          _logo: logo,
+          _source: source,
         });
 
         start = start + 1050;
@@ -131,6 +123,7 @@ try {
       }
 
       try {
+        // navigating to the npoint page where we past all the item information as json
         await page.goto("https://www.npoint.io/", {
           waitUntil: "networkidle0",
         });
@@ -139,11 +132,10 @@ try {
 
         await navigationPromise;
 
-        const nPoint = await page.waitForSelector(
+        // logging into npoint
+        const nPoint = await page.$(
           ".header > .header-container > .user-info-container > .slide-down-component"
         );
-
-        console.log("connected");
 
         await nPoint.click();
 
@@ -155,47 +147,48 @@ try {
 
         await page.click(
           ".login-component > .spaced-children > .justify-end > .button-group > .primary"
-        );
-        console.log("logged in");
+        ),
+          await page.waitForResponse((response) => response.status() === 200);
 
         await navigationPromise;
 
-        await page.screenshot({ path: "startPoint.jpg" });
-
+        // navigating to the json page
         await page.goto("https://www.npoint.io/docs/fe2363344f2e0980e914", {
           waitUntil: "networkidle0",
         });
 
         await navigationPromise;
 
-        console.log("abt to type");
-        await page.screenshot({ path: "startingPoint.jpg" });
-
-        const input = await page.$("#brace-editor > textarea");
-
-        console.log("abt to clear");
-
-        // focus on the input field
+        // focusing and clearing the input field
         await page.click("#brace-editor > textarea");
         await page.keyboard.down("Control");
         await page.keyboard.press("A");
         await page.keyboard.up("Control");
-        console.log("cleared");
+        await page.keyboard.press("Backspace");
 
-        await input.type(`{"data" : ${JSON.stringify(next)}`);
+        await page.click("#brace-editor > textarea");
 
-        await page.screenshot({ path: "midPoint.jpg" });
+        // stringifying and copying the next array to clipboard
+        await page.evaluate((next) => {
+          return navigator.clipboard.writeText(
+            `{ "data": ${JSON.stringify(next)}}`
+          );
+        }, next);
 
+        // pasting the array in the input field
+        await page.keyboard.down("Control");
+        await page.keyboard.press("v");
+        await page.keyboard.up("Control");
+
+        // saving the updated json
         await page.click(
           ".document-page > .document-page-header > .header > .header-container > .cta"
         );
 
-        // await page.evaluate(
-        //   () => (document.querySelector("#brace-editor > textarea").value = "")
-        // );
+        // closing the page
+        await page.close();
 
-        await page.screenshot({ path: "npoint.jpg" });
-        console.log("filled");
+        console.log("done");
 
         // Neveragain@app
       } catch (e) {

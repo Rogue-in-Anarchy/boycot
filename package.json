@@ -1,15 +1,25 @@
 {
   "name": "boycot",
   "version": "1.0.0",
-  "description": "",
+  "description": "A web scarping app",
   "main": "index.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Nehemiah",
+  "license": "UNLICENSED",
   "dependencies": {
     "puppeteer": "^22.3.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rogue-in-Anarchy/boycot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rogue-in-Anarchy/boycot/issues"
+  },
+  "homepage": "https://github.com/Rogue-in-Anarchy/boycot#readme"
 }
